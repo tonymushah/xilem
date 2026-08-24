@@ -1032,9 +1032,12 @@ impl RenderRoot {
     where
         E: FnOnce(&mut PropertyStackMut<'_>) -> O,
     {
-        let Some(property_stack) = self.property_arena.arena.get_mut(&property_stack_id) else {
-            panic!("property stack not found");
-        };
+        let property_stack = self
+            .property_arena
+            .arena
+            .get_mut(&property_stack_id)
+            .expect("property stack not found");
+
         let mut props_stack_mut = PropertyStackMut {
             selector_changes: Vec::new(),
             property_stack,
@@ -1049,8 +1052,6 @@ impl RenderRoot {
         if selector_changes.is_empty() {
             return out;
         }
-
-        let _ = props_stack_mut;
 
         // Only mark the node that is linked to this property stack
         // for the update-properties pass: `need_update_props`

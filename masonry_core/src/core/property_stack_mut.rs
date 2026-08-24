@@ -20,9 +20,12 @@ impl<'a> PropertyStackMut<'a> {
     where
         E: FnOnce(&mut SelectorPropertiesMut<'_>) -> O,
     {
-        let Some((selector, set)) = self.property_stack.stack.get_mut(index) else {
-            panic!("The index is out of bound?");
-        };
+        let (selector, set) = self
+            .property_stack
+            .stack
+            .get_mut(index)
+            .expect("The index is out of bound?");
+
         let mut set_mut = SelectorPropertiesMut {
             has_property_changed: false,
             stack: set,
@@ -30,7 +33,6 @@ impl<'a> PropertyStackMut<'a> {
         let res = edit_fn(&mut set_mut);
         if set_mut.has_property_changed {
             let selector = selector.clone();
-            let _ = set;
             self.push_changes(&selector);
         }
         res
@@ -41,13 +43,7 @@ impl<'a> PropertyStackMut<'a> {
             .stack
             .iter()
             .enumerate()
-            .filter_map(|(index, (selector_in, _))| {
-                if selector == selector_in {
-                    Some(index)
-                } else {
-                    None
-                }
-            })
+            .filter_map(|(index, (selector_in, _))| (selector == selector_in).then_some(index))
             .collect()
     }
 

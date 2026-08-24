@@ -24,7 +24,7 @@ impl<'a> SelectorPropertiesMut<'a> {
     /// Removes property `P`. Returns the previous value if `P` was set.
     pub fn remove<P: Property>(&mut self) -> Option<P> {
         let old_value = self.stack.remove();
-        self.has_property_changed = true;
+        self.has_property_changed = old_value.is_some();
         old_value
     }
 }
