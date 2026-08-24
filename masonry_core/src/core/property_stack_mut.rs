@@ -70,15 +70,13 @@ impl<'a> PropertyStackMut<'a> {
     }
     /// Remove the latest inserted property set for the given [`Selector`] (aka `pop`).
     pub fn pop_selector_property_set(&mut self, selector: &Selector) {
-        let maybe_index = self.property_stack.stack.iter().enumerate().rev().find_map(
-            |(index, (selector_in, _))| {
-                if selector_in == selector {
-                    Some(index)
-                } else {
-                    None
-                }
-            },
-        );
+        let maybe_index = self
+            .property_stack
+            .stack
+            .iter()
+            .enumerate()
+            .rev()
+            .find_map(|(index, (selector_in, _))| (selector_in == selector).then_some(index));
         let Some(index) = maybe_index else {
             return;
         };
@@ -148,13 +146,7 @@ impl<'a> PropertyStackMut<'a> {
             .iter()
             .enumerate()
             .rev()
-            .find_map(|(index, (selector_in, _))| {
-                if selector_in == selector {
-                    Some(index)
-                } else {
-                    None
-                }
-            })
+            .find_map(|(index, (selector_in, _))| (selector_in == selector).then_some(index))
     }
 }
 
