@@ -65,6 +65,58 @@ impl PropertyStack {
         self.stack.push((selector, properties.into()));
     }
 
+    /// Returns the corresponding indexes of the given [`Selector`].
+    pub fn get_selector_indexes(&self, selector: &Selector) -> Vec<usize> {
+        self.stack
+            .iter()
+            .enumerate()
+            .filter_map(|(index, (selector_in, _))| (selector == selector_in).then_some(index))
+            .collect()
+    }
+
+    /// Get the mutable reference latest inserted property set for the given [`Selector`].
+    ///
+    /// Return [`None`] if no property set corresponding the selector is not found.
+    pub fn get_last_selector_property_set_mut<E, O>(
+        &mut self,
+        selector: &Selector,
+    ) -> Option<&mut PropertySet> {
+        let index = self.get_last_selector_index(selector)?;
+        Some(&mut self.stack.get_mut(index)?.1)
+    }
+    /// Checks if the given [`Selector`] has any property set present.
+    pub fn has_selector(&self, selector: &Selector) -> bool {
+        self.stack
+            .iter()
+            .any(|(selector_in, _)| selector == selector_in)
+    }
+    /// Remove the latest inserted property set for the given [`Selector`] (aka `pop`).
+    pub fn pop_selector_property_set(&mut self, selector: &Selector) {
+        let maybe_index = self
+            .stack
+            .iter()
+            .enumerate()
+            .rev()
+            .find_map(|(index, (selector_in, _))| (selector_in == selector).then_some(index));
+        let Some(index) = maybe_index else {
+            return;
+        };
+        self.stack.remove(index);
+    }
+
+    /// Remove a property stack with its given index.
+    pub fn remove_set(&mut self, index: usize) {
+        self.stack.remove(index);
+    }
+
+    fn get_last_selector_index(&self, selector: &Selector) -> Option<usize> {
+        self.stack
+            .iter()
+            .enumerate()
+            .rev()
+            .find_map(|(index, (selector_in, _))| (selector_in == selector).then_some(index))
+    }
+
     fn get_prop<P: Property>(&self, maybe_index: Option<usize>) -> Option<&P> {
         let Some(index) = maybe_index else {
             // We've cached/resolved that there is no matching entry in the stack.

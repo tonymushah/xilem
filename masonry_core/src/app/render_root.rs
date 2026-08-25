@@ -20,9 +20,8 @@ use crate::app::layer_stack::LayerStack;
 use crate::core::{
     AccessCtx, AccessEvent, BrushIndex, CursorIcon, DefaultProperties, ErasedAction, FromDynWidget,
     Handled, Ime, LayerType, NewWidget, PointerEvent, PropertiesRef, PropertyArena, PropertyStack,
-    PropertyStackId, PropertyStackMut, QueryCtx, ResizeDirection, Selector, TextEvent, Widget,
-    WidgetArena, WidgetArenaNode, WidgetId, WidgetMut, WidgetPod, WidgetRef, WidgetState,
-    WidgetTag, WidgetTagInner, WindowEvent,
+    PropertyStackId, QueryCtx, ResizeDirection, TextEvent, Widget, WidgetArena, WidgetArenaNode,
+    WidgetId, WidgetMut, WidgetPod, WidgetRef, WidgetState, WidgetTag, WidgetTagInner, WindowEvent,
 };
 use crate::imaging::record::Scene;
 use crate::passes::accessibility::run_accessibility_pass;
@@ -1019,46 +1018,23 @@ impl RenderRoot {
 
 // --- MARK: PROPERTY STACK EDITS
 impl RenderRoot {
-    /// Returns a [`PropertyStackMut`] to a specific property stack.
-    ///
-    /// The [`PropertyStackMut`] changes will only be applied to any widgets that is linked to its given id.
-    ///
-    /// Because of how [`PropertyStackMut`] works, it can only be passed to a user-provided callback.
+    /// Replace a [`PropertyStack`] to a new one stack.
     ///
     /// # Panics
     ///
     /// Panics if there is no property stack with the given id in the [`PropertyArena`].
-    pub fn edit_property_stack<E, O>(&mut self, property_stack_id: PropertyStackId, edit_fn: E) -> O
-    where
-        E: FnOnce(&mut PropertyStackMut<'_>) -> O,
-    {
-        let property_stack = self
-            .property_arena
-            .arena
-            .get_mut(&property_stack_id)
-            .expect("property stack not found");
-
-        let mut props_stack_mut = PropertyStackMut {
-            selector_changes: Vec::new(),
-            property_stack,
-        };
-
-        let out = edit_fn(&mut props_stack_mut);
-
-        let selector_changes = props_stack_mut.selector_changes;
-
-        // We don't continue any further
-        // if there is no changes inside done inside the property stack.
-        if selector_changes.is_empty() {
-            return out;
-        }
+    pub fn replace_property_stack(
+        &mut self,
+        property_stack_id: PropertyStackId,
+        stack: PropertyStack,
+    ) {
+        let _ = self.property_arena.arena.insert(property_stack_id, stack);
 
         // Only mark the node that is linked to this property stack
         // for the update-properties pass: `need_update_props`
         fn invalidate_properties_resolution(
             node: ArenaMut<'_, WidgetArenaNode>,
             property_stack_id: PropertyStackId,
-            changes: &[Selector],
         ) {
             let children = node.children;
             let widget = &mut *node.item.widget;
@@ -1075,26 +1051,18 @@ impl RenderRoot {
                 .is_some_and(|id| property_stack_id == *id);
 
             if is_linked_to_pstack {
-                // TODO apply diffs before hands or...
-                let class_set = &node.item.class_set;
-                // class_set.apply(&state.class_diff);
-                // check if this edit is related to this node class set.
-                if changes.iter().any(|selector| selector.matches(class_set)) {
-                    state.request_update_props = true;
-                    // ? is this even required here?
-                    state.property_cache.invalidated = true;
-                }
+                state.request_update_props = true;
+                state.property_cache.invalidated = true;
             }
             let id = state.id;
             recurse_on_children(id, widget, children, |node| {
-                invalidate_properties_resolution(node, property_stack_id, changes);
+                invalidate_properties_resolution(node, property_stack_id);
             });
         }
         let root_node = self.widget_arena.get_node_mut(self.root_id());
-        invalidate_properties_resolution(root_node, property_stack_id, &selector_changes);
+        invalidate_properties_resolution(root_node, property_stack_id);
 
         self.run_rewrite_passes();
-        out
     }
     /// Checks if a property stack with the given id is in the property arena.
     pub fn has_property_stack(&self, property_stack_id: PropertyStackId) -> bool {
@@ -1130,11 +1098,12 @@ impl RenderRoot {
             // If not, the property changes will be not visible when we run the rewrite passes.
             state.needs_update_props = true;
 
-            if state
+            let is_linked_to_p_stack = state
                 .property_stack_id
                 .as_ref()
-                .is_some_and(|id| property_stack_id == *id)
-            {
+                .is_some_and(|id| property_stack_id == *id);
+
+            if is_linked_to_p_stack {
                 state.request_update_props = true;
                 state.property_cache.invalidated = true;
             }
