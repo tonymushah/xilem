@@ -77,13 +77,21 @@ impl PropertyStack {
     /// Get the mutable reference latest inserted property set for the given [`Selector`].
     ///
     /// Return [`None`] if no property set corresponding the selector is not found.
-    pub fn get_last_selector_property_set_mut<E, O>(
+    pub fn get_last_selector_property_set_mut(
         &mut self,
         selector: &Selector,
     ) -> Option<&mut PropertySet> {
         let index = self.get_last_selector_index(selector)?;
+        self.get_property_set_mut(index)
+    }
+
+    /// Get the mutable reference a property set for the given index.
+    ///
+    /// Return [`None`] if the index is out of bounds.
+    pub fn get_property_set_mut(&mut self, index: usize) -> Option<&mut PropertySet> {
         Some(&mut self.stack.get_mut(index)?.1)
     }
+
     /// Checks if the given [`Selector`] has any property set present.
     pub fn has_selector(&self, selector: &Selector) -> bool {
         self.stack
