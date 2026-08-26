@@ -82,13 +82,13 @@ impl PropertyStack {
         selector: &Selector,
     ) -> Option<&mut PropertySet> {
         let index = self.get_last_selector_index(selector)?;
-        self.get_property_set_mut(index)
+        self.get_layer_mut(index)
     }
 
     /// Get the mutable reference a property set for the given index.
     ///
     /// Return [`None`] if the index is out of bounds.
-    pub fn get_property_set_mut(&mut self, index: usize) -> Option<&mut PropertySet> {
+    pub fn get_layer_mut(&mut self, index: usize) -> Option<&mut PropertySet> {
         Some(&mut self.stack.get_mut(index)?.1)
     }
 
@@ -113,9 +113,24 @@ impl PropertyStack {
         self.stack.remove(index);
     }
 
-    /// Remove a property stack with its given index.
-    pub fn remove_set(&mut self, index: usize) {
+    /// Remove a property set with its given index.
+    pub fn remove_layer(&mut self, index: usize) {
         self.stack.remove(index);
+    }
+
+    /// Insert a new property set at the given index.
+    pub fn insert_layer(
+        &mut self,
+        index: usize,
+        selector: Selector,
+        properties: impl Into<PropertySet>,
+    ) {
+        self.stack.insert(index, (selector, properties.into()));
+    }
+
+    /// Get the property stack layers.
+    pub fn get_layers(&self) -> &[(Selector, PropertySet)] {
+        &self.stack
     }
 
     fn get_last_selector_index(&self, selector: &Selector) -> Option<usize> {
