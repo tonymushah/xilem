@@ -1077,10 +1077,7 @@ impl RenderRoot {
             // If not, the property changes will be not visible when we run the rewrite passes.
             state.needs_update_props = true;
 
-            let is_linked_to_p_stack = state
-                .property_stack_id
-                .as_ref()
-                .is_some_and(|id| stack_id == *id);
+            let is_linked_to_p_stack = state.property_stack_id == Some(stack_id);
 
             if is_linked_to_p_stack {
                 state.request_update_props = true;
