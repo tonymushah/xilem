@@ -1075,14 +1075,9 @@ impl RenderRoot {
     /// This also invalidate the computed properties of any widget in the entire tree that is linked to that property stack,
     /// and calls [`Widget::property_changed`] for every property previously
     /// resolved by each widget.
-    pub fn remove_property_stack(&mut self, property_stack_id: PropertyStackId) {
+    pub fn remove_property_stack(&mut self, stack_id: PropertyStackId) {
         // Don't proceed any further if nothing have been removed
-        if self
-            .property_arena
-            .arena
-            .remove(&property_stack_id)
-            .is_none()
-        {
+        if self.property_arena.arena.remove(&stack_id).is_none() {
             return;
         }
 
@@ -1119,7 +1114,7 @@ impl RenderRoot {
         let root_node = self.widget_arena.get_node_mut(self.root_id());
 
         root_node.item.state.needs_update_props = true;
-        invalidate_properties_resolution(root_node, property_stack_id);
+        invalidate_properties_resolution(root_node, stack_id);
 
         self.run_rewrite_passes();
     }
