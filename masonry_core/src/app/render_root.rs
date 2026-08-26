@@ -1030,37 +1030,7 @@ impl RenderRoot {
     ) {
         let _ = self.property_arena.arena.insert(property_stack_id, stack);
 
-        // Only mark the node that is linked to this property stack
-        // for the update-properties pass: `need_update_props`
-        fn invalidate_properties_resolution(
-            node: ArenaMut<'_, WidgetArenaNode>,
-            property_stack_id: PropertyStackId,
-        ) {
-            let children = node.children;
-            let widget = &mut *node.item.widget;
-            let state = &mut node.item.state;
-
-            // We tell the node state there some props update that needs to be done,
-            // since we can't tell in advance if its child has the property stack id.
-            // If not, the property changes will be not visible when we run the rewrite passes.
-            state.needs_update_props = true;
-
-            let is_linked_to_pstack = state
-                .property_stack_id
-                .as_ref()
-                .is_some_and(|id| property_stack_id == *id);
-
-            if is_linked_to_pstack {
-                state.request_update_props = true;
-                state.property_cache.invalidated = true;
-            }
-            let id = state.id;
-            recurse_on_children(id, widget, children, |node| {
-                invalidate_properties_resolution(node, property_stack_id);
-            });
-        }
-        let root_node = self.widget_arena.get_node_mut(self.root_id());
-        invalidate_properties_resolution(root_node, property_stack_id);
+        self.invalidate_property_stack_resolution(property_stack_id);
 
         self.run_rewrite_passes();
     }
@@ -1081,10 +1051,22 @@ impl RenderRoot {
             return;
         }
 
+        self.invalidate_property_stack_resolution(stack_id);
+
+        self.run_rewrite_passes();
+    }
+
+    /// Add a property stack to the [`PropertyArena`] and returns its id.
+    pub fn insert_property_stack(&mut self, property_stack: PropertyStack) -> PropertyStackId {
+        self.property_arena.insert(property_stack)
+    }
+
+    /// Mark the node that is linked to this property stack for the update-properties pass: `need_update_props`
+    fn invalidate_property_stack_resolution(&mut self, stack_id: PropertyStackId) {
         // Only mark the node that is linked to this property stack for the update-properties pass: `need_update_props`
         fn invalidate_properties_resolution(
             node: ArenaMut<'_, WidgetArenaNode>,
-            property_stack_id: PropertyStackId,
+            stack_id: PropertyStackId,
         ) {
             let children = node.children;
             let widget = &mut *node.item.widget;
@@ -1098,7 +1080,7 @@ impl RenderRoot {
             let is_linked_to_p_stack = state
                 .property_stack_id
                 .as_ref()
-                .is_some_and(|id| property_stack_id == *id);
+                .is_some_and(|id| stack_id == *id);
 
             if is_linked_to_p_stack {
                 state.request_update_props = true;
@@ -1107,21 +1089,13 @@ impl RenderRoot {
 
             let id = state.id;
             recurse_on_children(id, widget, children, |node| {
-                invalidate_properties_resolution(node, property_stack_id);
+                invalidate_properties_resolution(node, stack_id);
             });
         }
 
         let root_node = self.widget_arena.get_node_mut(self.root_id());
 
-        root_node.item.state.needs_update_props = true;
         invalidate_properties_resolution(root_node, stack_id);
-
-        self.run_rewrite_passes();
-    }
-
-    /// Add a property stack to the [`PropertyArena`] and returns its id.
-    pub fn insert_property_stack(&mut self, property_stack: PropertyStack) -> PropertyStackId {
-        self.property_arena.insert(property_stack)
     }
 }
 
