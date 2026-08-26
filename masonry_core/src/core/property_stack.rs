@@ -65,52 +65,11 @@ impl PropertyStack {
         self.stack.push((selector, properties.into()));
     }
 
-    /// Returns the corresponding indexes of the given [`Selector`].
-    pub fn get_selector_indexes(&self, selector: &Selector) -> Vec<usize> {
-        self.stack
-            .iter()
-            .enumerate()
-            .filter_map(|(index, (selector_in, _))| (selector == selector_in).then_some(index))
-            .collect()
-    }
-
-    /// Get the mutable reference latest inserted property set for the given [`Selector`].
-    ///
-    /// Return [`None`] if no property set corresponding the selector is not found.
-    pub fn get_last_selector_property_set_mut(
-        &mut self,
-        selector: &Selector,
-    ) -> Option<&mut PropertySet> {
-        let index = self.get_last_selector_index(selector)?;
-        self.get_layer_mut(index)
-    }
-
     /// Get the mutable reference a property set for the given index.
     ///
     /// Return [`None`] if the index is out of bounds.
     pub fn get_layer_mut(&mut self, index: usize) -> Option<&mut PropertySet> {
         Some(&mut self.stack.get_mut(index)?.1)
-    }
-
-    /// Checks if the given [`Selector`] has any property set present.
-    pub fn has_selector(&self, selector: &Selector) -> bool {
-        self.stack
-            .iter()
-            .any(|(selector_in, _)| selector == selector_in)
-    }
-
-    /// Remove the latest inserted property set for the given [`Selector`] (aka `pop`).
-    pub fn pop_selector_property_set(&mut self, selector: &Selector) {
-        let maybe_index = self
-            .stack
-            .iter()
-            .enumerate()
-            .rev()
-            .find_map(|(index, (selector_in, _))| (selector_in == selector).then_some(index));
-        let Some(index) = maybe_index else {
-            return;
-        };
-        self.stack.remove(index);
     }
 
     /// Remove a property set with its given index.
@@ -131,14 +90,6 @@ impl PropertyStack {
     /// Get the property stack layers.
     pub fn get_layers(&self) -> &[(Selector, PropertySet)] {
         &self.stack
-    }
-
-    fn get_last_selector_index(&self, selector: &Selector) -> Option<usize> {
-        self.stack
-            .iter()
-            .enumerate()
-            .rev()
-            .find_map(|(index, (selector_in, _))| (selector_in == selector).then_some(index))
     }
 
     fn get_prop<P: Property>(&self, maybe_index: Option<usize>) -> Option<&P> {
