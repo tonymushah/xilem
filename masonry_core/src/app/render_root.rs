@@ -1076,7 +1076,7 @@ impl RenderRoot {
     /// and calls [`Widget::property_changed`] for every property previously
     /// resolved by each widget.
     pub fn remove_property_stack(&mut self, stack_id: PropertyStackId) {
-        // Don't proceed any further if nothing have been removed
+        // Don't proceed any further if nothing has been removed
         if self.property_arena.arena.remove(&stack_id).is_none() {
             return;
         }
