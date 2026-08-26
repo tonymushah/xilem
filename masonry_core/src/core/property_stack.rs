@@ -98,6 +98,7 @@ impl PropertyStack {
             .iter()
             .any(|(selector_in, _)| selector == selector_in)
     }
+
     /// Remove the latest inserted property set for the given [`Selector`] (aka `pop`).
     pub fn pop_selector_property_set(&mut self, selector: &Selector) {
         let maybe_index = self

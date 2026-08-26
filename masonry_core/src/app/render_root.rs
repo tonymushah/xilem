@@ -1064,10 +1064,12 @@ impl RenderRoot {
 
         self.run_rewrite_passes();
     }
+
     /// Checks if a property stack with the given id is in the property arena.
     pub fn has_property_stack(&self, property_stack_id: PropertyStackId) -> bool {
         self.property_arena.arena.contains_key(&property_stack_id)
     }
+
     /// Remove a property stack with the given id in the property arena.
     ///
     /// This also invalidate the computed properties of any widget in the entire tree that is linked to that property stack,
@@ -1121,6 +1123,7 @@ impl RenderRoot {
 
         self.run_rewrite_passes();
     }
+
     /// Add a property stack to the [`PropertyArena`] and returns its id.
     pub fn insert_property_stack(&mut self, property_stack: PropertyStack) -> PropertyStackId {
         self.property_arena.insert(property_stack)
